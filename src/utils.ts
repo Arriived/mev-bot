@@ -146,18 +146,24 @@ function toDecimalString(origNumberStr: string, decimalPlaces: number): string {
 async function* fuseGenerators<T>(
   gens: AsyncGenerator<T>[],
 ): AsyncGenerator<T> {
-  const generatorPromises: Array<
-    Promise<{ result: IteratorResult<T>; generatorIndex: number }>
-  > = gens.map((gen, index) =>
-    gen.next().then((result) => ({ result, generatorIndex: index })),
+  const generatorPromises = new Map(
+    gens.map((gen, generatorIndex) => [
+      generatorIndex,
+      gen.next().then((result) => ({ result, generatorIndex })),
+    ] as const),
   );
 
-  while (true) {
-    const { result, generatorIndex } = await Promise.race(generatorPromises);
+  while (generatorPromises.size > 0) {
+    const { result, generatorIndex } = await Promise.race(generatorPromises.values());
+    if (result.done) {
+      generatorPromises.delete(generatorIndex);
+      continue;
+    }
     yield result.value;
-    generatorPromises[generatorIndex] = gens[generatorIndex]
-      .next()
-      .then((result) => ({ result, generatorIndex }));
+    generatorPromises.set(
+      generatorIndex,
+      gens[generatorIndex].next().then((result) => ({ result, generatorIndex })),
+    );
   }
 }
 
