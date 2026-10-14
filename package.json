@@ -15,6 +15,7 @@
     "build": "tsc -p tsconfig.json",
     "build:watch": "tsc -w -p tsconfig.json",
     "lint": "eslint . --ext .ts --ext .mts",
+    "test": "npm run build && node --test test/utils.test.js",
     "prettier": "prettier --config .prettierrc --write ."
   },
   "devDependencies": {
